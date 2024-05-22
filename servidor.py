@@ -2,6 +2,13 @@ import socket
 import threading
 from collections import deque
 
+# Mensagem do Dia (MOTD)
+MOTD = [
+    ":server 375 {nick} :- server Message of the Day -",
+    ":server 372 {nick} :- Welcome to the IRC server",
+    ":server 376 {nick} :End of /MOTD command.",
+]
+
 
 class Cliente:
     def __init__(self, connection, address, server):
@@ -9,6 +16,7 @@ class Cliente:
         self.addr = address
         self.server = server
         self.nick = None
+        self.username = None
         self.registered = False
         self.buffer = ""
 
@@ -44,10 +52,13 @@ class Cliente:
             self.handle_nick(parts[1])
         elif cmd == "USER" and len(parts) > 4:
             self.handle_user(parts[1], parts[4])
-        elif cmd == "PING":
+        elif cmd == "PING" and len(parts) > 1:
             self.send_data(f"PONG :{parts[1]}")
         elif cmd == "JOIN" and len(parts) > 1:
-            self.handle_join(parts[1])
+            if self.registered:
+                self.handle_join(parts[1])
+            else:
+                self.send_data("ERROR :You need to register first\r\n")
         elif cmd == "PART" and len(parts) > 1:
             self.handle_part(parts[1])
         elif cmd == "QUIT":
@@ -56,6 +67,12 @@ class Cliente:
             self.handle_privmsg(parts[1], " ".join(parts[2:]))
         elif cmd == "NAMES" and len(parts) > 1:
             self.handle_names(parts[1])
+        elif cmd == "LIST":
+            self.handle_list()
+        elif cmd == "MODE" and len(parts) > 1:
+            self.handle_mode(parts[1])
+        elif cmd == "WHO" and len(parts) > 1:
+            self.handle_who(parts[1])
         else:
             self.send_data("ERROR :Unknown command\r\n")
 
@@ -65,15 +82,21 @@ class Cliente:
         elif self.server.is_nick_available(nick):
             self.nick = nick
             self.send_data(f":server 001 {nick} :Welcome to the IRC Network {nick}\r\n")
-            self.registered = True
+            self.check_registration()
         else:
             self.send_data(f"433 * {nick} :Nickname is already in use\r\n")
 
     def handle_user(self, username, realname):
-        if self.registered:
-            self.send_data(f":server 375 {self.nick} :- Message of the Day -\r\n")
-            self.send_data(f":server 372 {self.nick} :- Welcome {self.nick}\r\n")
-            self.send_data(f":server 376 {self.nick} :End of /MOTD command.\r\n")
+        self.username = username
+        self.send_data(f":server 375 {self.nick} :- server Message of the Day -\r\n")
+        self.send_data(f":server 372 {self.nick} :- Welcome to the IRC server\r\n")
+        self.send_data(f":server 376 {self.nick} :End of /MOTD command.\r\n")
+        self.check_registration()
+
+    def check_registration(self):
+        if self.nick and self.username:
+            self.registered = True
+            self.send_data(f":server 001 {self.nick} :Welcome {self.nick}\r\n")
 
     def handle_join(self, channel):
         self.server.add_to_channel(self, channel)
@@ -84,11 +107,14 @@ class Cliente:
         self.server.list_names(channel, self)
 
     def handle_part(self, channel):
-        self.server.remove_from_channel(self, channel)
-        self.send_data(f":{self.nick} PART {channel} :Leaving\r\n")
-        self.server.broadcast_to_channel(
-            channel, f":{self.nick} PART {channel} :Leaving\r\n", self
-        )
+        if channel in self.server.channels and self in self.server.channels[channel]:
+            self.server.remove_from_channel(self, channel)
+            self.send_data(f":{self.nick} PART {channel} :Leaving\r\n")
+            self.server.broadcast_to_channel(
+                channel, f":{self.nick} PART {channel} :Leaving\r\n", self
+            )
+        else:
+            self.send_data(f"442 {self.nick} {channel} :You're not on that channel\r\n")
 
     def handle_quit(self):
         self.server.remove_client(self)
@@ -101,7 +127,37 @@ class Cliente:
         )
 
     def handle_names(self, channel):
-        self.server.list_names(channel, self)
+        if channel in self.server.channels:
+            users = [
+                c.nick for c in self.server.channels[channel] if c.nick is not None
+            ]
+            self.send_data(
+                f":{self.server.port} 353 {self.nick} = {channel} :{' '.join(users)}\r\n"
+            )
+            self.send_data(
+                f":{self.server.port} 366 {self.nick} {channel} :End of /NAMES list.\r\n"
+            )
+        else:
+            self.send_data(f"403 {self.nick} {channel} :No such channel\r\n")
+
+    def handle_list(self):
+        for channel, clients in self.server.channels.items():
+            self.send_data(f":server 322 {self.nick} {channel} {len(clients)} :\r\n")
+        self.send_data(f":server 323 {self.nick} :End of /LIST\r\n")
+
+    def handle_mode(self, channel):
+        # Placeholder response for MODE command
+        self.send_data(f":server 324 {self.nick} {channel} +nt\r\n")
+
+    def handle_who(self, channel):
+        if channel in self.server.channels:
+            for client in self.server.channels[channel]:
+                self.send_data(
+                    f":server 352 {self.nick} {channel} {client.username} {client.addr[0]} server {client.nick} H :0 {client.username}\r\n"
+                )
+            self.send_data(f":server 315 {self.nick} {channel} :End of /WHO list.\r\n")
+        else:
+            self.send_data(f"403 {self.nick} {channel} :No such channel\r\n")
 
     def run(self):
         print(f"Cliente {self.addr} conectado.")
@@ -128,6 +184,9 @@ class Servidor:
             self.channels[channel] = deque()
         self.channels[channel].append(client)
         print(f"Cliente {client.addr} entrou no canal {channel}.")
+        self.broadcast_to_channel(
+            channel, f":{client.nick} JOIN :{channel}\r\n", client
+        )
 
     def remove_from_channel(self, client, channel):
         if channel in self.channels and client in self.channels[channel]:
@@ -135,6 +194,9 @@ class Servidor:
             if not self.channels[channel]:
                 del self.channels[channel]
             print(f"Cliente {client.addr} saiu do canal {channel}.")
+            self.broadcast_to_channel(
+                channel, f":{client.nick} PART {channel} :Leaving\r\n", client
+            )
 
     def list_names(self, channel, client):
         if channel in self.channels:
@@ -145,6 +207,8 @@ class Servidor:
             client.send_data(
                 f":{self.port} 366 {client.nick} {channel} :End of /NAMES list.\r\n"
             )
+        else:
+            client.send_data(f"403 {client.nick} {channel} :No such channel\r\n")
 
     def broadcast_to_channel(self, channel, message, sender=None):
         if channel in self.channels:

@@ -20,17 +20,21 @@ class Cliente:
         raise Exception("EXCEÇÃO (timeout)")
 
     def conectar(self, host, port=6667):
-        self.socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-        self.socket.connect((host, port))
-        self.conectado = True
-        threading.Thread(target=self.receber_dados).start()
+        try:
+            self.socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+            self.socket.connect((host, port))
+            self.conectado = True
+            threading.Thread(target=self.receber_dados).start()
 
-        # Solicita nick e user do usuário
-        nick = input("Digite seu nick: ")
-        realname = input("Digite seu nome real: ")
+            # Solicita nick e user do usuário
+            nick = input("Digite seu nick: ")
+            realname = input("Digite seu nome real: ")
 
-        self.nick_command(nick)
-        self.user_command(nick, realname)
+            self.nick_command(nick)
+            self.user_command(nick, realname)
+        except Exception as e:
+            print(f"Erro ao conectar ao servidor: {e}")
+            self.conectado = False
 
     def enviar_dados(self, msg):
         if self.conectado:
@@ -64,10 +68,25 @@ class Cliente:
                 print(f"Usuários no canal: {usuarios}")
             elif comando == "366":
                 print("Fim da lista de usuários do canal")
+            elif comando == "322":
+                canal = parts[2]
+                num_usuarios = parts[3]
+                print(f"Canal: {canal}, Usuários: {num_usuarios}")
+            elif comando == "323":
+                print("Fim da lista de canais")
+            elif comando == "324":
+                print(f"Modo do canal: {' '.join(parts[2:])}")
+            elif comando == "352":
+                print(f"WHO resposta: {' '.join(parts[2:])}")
+            elif comando == "315":
+                print("Fim da lista de /WHO")
             elif comando == "001":
                 print("Bem-vindo ao servidor!")
             elif comando in ["432", "433"]:
                 print(f"Erro: {linha}")
+            elif comando == "NICK":
+                if len(parts) > 2 and parts[2] == self.nick:
+                    self.nick = parts[2]
 
     def nick_command(self, username):
         self.nick = username
@@ -97,6 +116,15 @@ class Cliente:
 
     def names_command(self, canal):
         self.enviar_dados(f"NAMES {canal}")
+
+    def list_command(self):
+        self.enviar_dados("LIST")
+
+    def mode_command(self, canal):
+        self.enviar_dados(f"MODE {canal}")
+
+    def who_command(self, canal):
+        self.enviar_dados(f"WHO {canal}")
 
     def executar(self):
         print("Cliente IRC iniciado!")
@@ -152,12 +180,14 @@ class Cliente:
                 else:
                     print(f"Canais: {', '.join(self.channels)}")
             elif comando == "/list":
+                self.list_command()
+            elif comando == "/names":
                 if len(partes) >= 2:
                     self.names_command(partes[1])
                 elif self.current_channel:
                     self.names_command(self.current_channel)
                 else:
-                    print("Uso: /list <#canal>")
+                    print("Uso: /names <#canal>")
             elif comando == "/msg":
                 if len(partes) >= 3:
                     self.privmsg_command(partes[1], " ".join(partes[2:]))
@@ -165,6 +195,16 @@ class Cliente:
                     self.privmsg_command(self.current_channel, " ".join(partes[1:]))
                 else:
                     print("Uso: /msg <#canal> <mensagem> ou /msg <mensagem>")
+            elif comando == "/mode":
+                if len(partes) >= 2:
+                    self.mode_command(partes[1])
+                else:
+                    print("Uso: /mode <#canal>")
+            elif comando == "/who":
+                if len(partes) >= 2:
+                    self.who_command(partes[1])
+                else:
+                    print("Uso: /who <#canal>")
             elif comando == "/help":
                 self.mostrar_ajuda()
             else:
@@ -190,10 +230,13 @@ Comandos disponíveis:
 /join <#canal>          - Entra em um canal
 /leave <#canal> <motivo> - Sai de um canal
 /channel <#canal>       - Define o canal atual ou lista os canais que está participando
-/list <#canal>          - Lista os usuários em um canal
+/list                   - Lista os canais disponíveis
+/names <#canal>         - Lista os usuários em um canal
 /msg <#canal> <mensagem> - Envia uma mensagem para um canal
+/mode <#canal>          - Solicita o modo do canal
+/who <#canal>           - Solicita informações sobre os usuários de um canal
 /help                   - Mostra esta mensagem de ajuda
-        """
+            """
         )
 
 
