@@ -129,7 +129,7 @@ class Cliente:
     def executar(self):
         print("Cliente IRC iniciado!")
         while True:
-            signal.alarm(20)
+            signal.alarm(2000)
             try:
                 cmd = input()
             except Exception as e:
