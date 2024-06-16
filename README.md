@@ -13,54 +13,6 @@ Este sistema de mensagens instantâneas baseia-se no protocolo IRC (Internet Rel
 
 ---
 
-## Servidor (servidor.py)
-O servidor é responsável por aceitar conexões de clientes, processar comandos e gerenciar a comunicação entre diferentes usuários.
-
-### Funcionalidades
-
-- **Iniciar o Servidor**
-  - **Método**: `start()`
-  - **Descrição**: Inicializa o servidor e começa a aceitar conexões de clientes em uma thread separada.
-  - **Utilização**: Executar o script `servidor.py` inicia o servidor na porta 6667.
-
-- **Aceitar Conexões**
-  - **Método**: `accept_connections()`
-  - **Descrição**: Escuta a porta especificada para novas conexões de clientes e cria uma thread para cada cliente conectado.
-  - **Utilização**: Internamente chamado pelo método `start()`.
-
-- **Processar Comandos**
-  - **Método**: `handle_command(command)`
-  - **Descrição**: Processa comandos recebidos dos clientes e chama as funções apropriadas para cada comando.
-  - **Utilização**: Internamente chamado ao receber dados de um cliente.
-
-- **Adicionar Cliente ao Canal**
-  - **Método**: `add_to_channel(client, channel)`
-  - **Descrição**: Adiciona um cliente a um canal específico e notifica outros clientes do canal.
-  - **Utilização**: Chamado quando um cliente envia o comando JOIN.
-
-- **Remover Cliente do Canal**
-  - **Método**: `remove_from_channel(client, channel, motivo)`
-  - **Descrição**: Remove um cliente de um canal específico e notifica outros clientes do canal.
-  - **Utilização**: Chamado quando um cliente envia o comando PART.
-
-- **Broadcast de Mensagens**
-  - **Método**: `broadcast_to_channel(channel, message, sender=None)`
-  - **Descrição**: Envia uma mensagem para todos os clientes de um canal, exceto o remetente.
-  - **Utilização**: Usado para comandos como PRIVMSG.
-
-### Comandos IRC Implementados
-- **NICK**: Define o apelido do usuário.
-- **USER**: Define o nome real do usuário.
-- **PING**: Verifica se o host ainda está conectado.
-- **JOIN**: Permite que um usuário entre em um canal.
-- **PART**: Permite que um usuário saia de um canal.
-- **QUIT**: Desconecta o usuário do servidor.
-- **PRIVMSG**: Envia mensagens privadas para um canal.
-- **NAMES**: Lista os usuários de um canal.
-- **LIST**: Lista os canais disponíveis.
-
----
-
 ## Cliente (cliente.py)
 O cliente permite que o usuário se conecte ao servidor IRC, envie comandos e receba mensagens.
 
@@ -112,9 +64,62 @@ O cliente permite que o usuário se conecte ao servidor IRC, envie comandos e re
 
 ---
 
+## Servidor (servidor.py)
+O servidor é responsável por aceitar conexões de clientes, processar comandos e gerenciar a comunicação entre diferentes usuários.
+
+### Funcionalidades
+
+- **Iniciar o Servidor**
+  - **Método**: `start()`
+  - **Descrição**: Inicializa o servidor e começa a aceitar conexões de clientes em uma thread separada.
+  - **Utilização**: Executar o script `servidor.py` inicia o servidor na porta 6667.
+
+- **Aceitar Conexões**
+  - **Método**: `accept_connections()`
+  - **Descrição**: Escuta a porta especificada para novas conexões de clientes e cria uma thread para cada cliente conectado.
+  - **Utilização**: Internamente chamado pelo método `start()`.
+
+- **Processar Comandos**
+  - **Método**: `handle_command(command)`
+  - **Descrição**: Processa comandos recebidos dos clientes e chama as funções apropriadas para cada comando.
+  - **Utilização**: Internamente chamado ao receber dados de um cliente.
+
+- **Adicionar Cliente ao Canal**
+  - **Método**: `add_to_channel(client, channel)`
+  - **Descrição**: Adiciona um cliente a um canal específico e notifica outros clientes do canal.
+  - **Utilização**: Chamado quando um cliente envia o comando JOIN.
+
+- **Remover Cliente do Canal**
+  - **Método**: `remove_from_channel(client, channel, motivo)`
+  - **Descrição**: Remove um cliente de um canal específico e notifica outros clientes do canal.
+  - **Utilização**: Chamado quando um cliente envia o comando PART.
+
+- **Broadcast de Mensagens**
+  - **Método**: `broadcast_to_channel(channel, message, sender=None)`
+  - **Descrição**: Envia uma mensagem para todos os clientes de um canal, exceto o remetente.
+  - **Utilização**: Usado para comandos como PRIVMSG.
+
+### Comandos IRC Implementados
+- **NICK**: Define o apelido do usuário.
+- **USER**: Define o nome real do usuário.
+- **PING**: Verifica se o host ainda está conectado.
+- **JOIN**: Permite que um usuário entre em um canal.
+- **PART**: Permite que um usuário saia de um canal.
+- **QUIT**: Desconecta o usuário do servidor.
+- **PRIVMSG**: Envia mensagens privadas para um canal.
+- **NAMES**: Lista os usuários de um canal.
+- **LIST**: Lista os canais disponíveis.
+
+---
+
 ## Como Executar
 
 ### Servidor
 Para iniciar o servidor, execute o seguinte comando no terminal:
 ```sh
 python3 servidor.py
+
+### Cliente
+para iniciar o cliente, execute o seguinte comando no terminal:
+```sh
+python3 cliente.py
