@@ -118,8 +118,12 @@ O servidor é responsável por aceitar conexões de clientes, processar comandos
 Para iniciar o servidor, execute o seguinte comando no terminal:
 ```sh
 python3 servidor.py
+```
+
 
 ### Cliente
-para iniciar o cliente, execute o seguinte comando no terminal:
+Para inicia o cliente, execute o seguinte comando no terminal:
 ```sh
 python3 cliente.py
+
+
