@@ -13,8 +13,7 @@ class Cliente:
         self.current_channel = None
         self.channels = set()
 
-        # Exceção para alarme de tempo (não alterar esta linha)
-        signal.signal(signal.SIGALRM, self.exception_handler)
+    
 
     def executar(self):
         print("Cliente IRC iniciado!")
