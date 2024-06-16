@@ -92,11 +92,11 @@ class Cliente:
         elif cmd == "NAMES" and len(parts) > 1:
             self.handle_names(parts[1])
         elif cmd == "LIST":
-            self.handle_list()
-        elif cmd == "MODE" and len(parts) > 1:
-            self.handle_mode(parts[1])
-        elif cmd == "WHO" and len(parts) > 1:
-            self.handle_who(parts[1])
+            if len(parts) > 1:
+                canal = parts[1]
+                self.handle_list(canal)
+            else:
+                self.handle_list("")
         else:
             self.send_data("ERROR :Unknown command\r\n")
       
@@ -111,7 +111,6 @@ class Cliente:
             self.nick = nick
             if old_nick:
                 self.send_data(f":{old_nick} NICK {nick}\r\n")
-                self.server.broadcast_to_channel(self.channel, f":{old_nick} NICK {nick}\r\n", self)
             self.check_registration() # Verifica se o cliente já registrou um nick e um username
         else:
             self.send_data(f"433 * {nick} :Nickname is already in use\r\n")
@@ -160,10 +159,28 @@ class Cliente:
         else:
             self.send_data(f"403 {self.nick} {channel} :No such channel\r\n")
 
-    def handle_list(self):
-        for channel, clients in self.server.channels.items():
-            self.send_data(f":server 322 {self.nick} {channel} {len(clients)} :\r\n")
-        self.send_data(f":server 323 {self.nick} :End of /LIST\r\n")
+    def handle_list(self, canal):
+        try:
+            if canal in self.server.channels:
+                if self in self.server.channels[canal]:
+                    clients = self.server.channels[canal]
+                    if clients:
+                        users = [client.nick for client in clients if client.nick is not None]
+                        self.send_data(f"Usuários do canal: {' '.join(users)}\r\n")
+                    else:
+                        self.send_data(f"Usuários do canal: \r\n")
+            else:
+                for channel, clients in self.server.channels.items():
+                    if self in self.server.channels[channel]:
+                        clients = self.server.channels[canal]
+                        if clients:
+                            users = [client.nick for client in clients if client.nick is not None]
+                            self.send_data(f"Usuários do canal: {' '.join(users)}\r\n")
+                        else:
+                            self.send_data(f"Usuários do canal: \r\n")
+            self.send_data(f":server 323 {self.nick} :End of /LIST\r\n")
+        except Exception as e:
+            print(f"Erro ao listar canais: {e}")
 
 
     def handle_ping(self, message):

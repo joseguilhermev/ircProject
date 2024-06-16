@@ -1,8 +1,0 @@
-
-Pendente:
-- Falta corrigir formatação de ":" e "#", além de ver se o nome do canal cumpre o requisito
-- Implementar /list
-
-
-Comparar tudo ao final com o HexChat e o Freenode
-

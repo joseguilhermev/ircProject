@@ -4,6 +4,7 @@
 - Lucas Fidalgo Bitencourt - 2221061
 - Mateus Batista Peixoto da Silva - 2221147
 - José Guilherme - 2221010
+- João Henrique de Oliveira Salles - 2221074
 
 ## Visão Geral do Sistema
 Este sistema de mensagens instantâneas baseia-se no protocolo IRC (Internet Relay Chat) e consiste em dois componentes principais:
@@ -16,8 +17,22 @@ Este sistema de mensagens instantâneas baseia-se no protocolo IRC (Internet Rel
 ## Cliente (cliente.py)
 O cliente permite que o usuário se conecte ao servidor IRC, envie comandos e receba mensagens.
 
-### Funcionalidades
 
+### Comandos do Usuário
+- **/connect <host>**: Conecta ao servidor IRC.
+- **/nick <username>**: Define o apelido do usuário.
+- **/disconnect <motivo>**: Desconecta do servidor IRC.
+- **/quit <motivo>**: Sai do cliente IRC.
+- **/join <canal>**: Entra em um canal. **Se o canal não existir ele é criado**
+- **/leave <canal> <motivo>**: Sai de um canal.
+- **/channel <canal>**: Define o canal atual ou lista os canais que está participando.
+- **/list**: Lista os canais disponíveis.
+- **/names <canal>**: Lista os usuários em um canal.
+- **/msg <canal> <mensagem>**: Envia uma mensagem para um canal. Se o canal não for informado envia para o canal padrão se esse existir
+- **/help**: Mostra a lista de comandos disponíveis.
+- **ping <mensagem>**: Envia um ping para o servidor.
+
+### Funcionalidades
 - **Iniciar Cliente**
   - **Método**: `main()`
   - **Descrição**: Inicializa o cliente e começa a processar comandos do usuário.
@@ -48,56 +63,28 @@ O cliente permite que o usuário se conecte ao servidor IRC, envie comandos e re
   - **Descrição**: Processa os comandos recebidos do servidor.
   - **Utilização**: Internamente chamado ao receber dados.
 
-### Comandos do Usuário
-- **/nick <username>**: Define o apelido do usuário.
-- **/connect <host>**: Conecta ao servidor IRC.
-- **/disconnect <motivo>**: Desconecta do servidor IRC.
-- **/quit <motivo>**: Sai do cliente IRC.
-- **/join #<canal>**: Entra em um canal.
-- **/leave #<canal> <motivo>**: Sai de um canal.
-- **/channel #<canal>**: Define o canal atual ou lista os canais que está participando.
-- **/list**: Lista os canais disponíveis.
-- **/names #<canal>**: Lista os usuários em um canal.
-- **/msg #<canal> <mensagem>**: Envia uma mensagem para um canal.
-- **/help**: Mostra a lista de comandos disponíveis.
-- **ping <mensagem>**: Envia um ping para o servidor.
 
 ---
 
 ## Servidor (servidor.py)
 O servidor é responsável por aceitar conexões de clientes, processar comandos e gerenciar a comunicação entre diferentes usuários.
 
+
 ### Funcionalidades
 
 - **Iniciar o Servidor**
   - **Método**: `start()`
   - **Descrição**: Inicializa o servidor e começa a aceitar conexões de clientes em uma thread separada.
-  - **Utilização**: Executar o script `servidor.py` inicia o servidor na porta 6667.
 
 - **Aceitar Conexões**
   - **Método**: `accept_connections()`
-  - **Descrição**: Escuta a porta especificada para novas conexões de clientes e cria uma thread para cada cliente conectado.
-  - **Utilização**: Internamente chamado pelo método `start()`.
+  - **Descrição**: Escuta a porta especificada para novas conexões de clientes e cria uma thread para cada cliente conectado usando a classe Cliente e método run().
 
 - **Processar Comandos**
-  - **Método**: `handle_command(command)`
-  - **Descrição**: Processa comandos recebidos dos clientes e chama as funções apropriadas para cada comando.
-  - **Utilização**: Internamente chamado ao receber dados de um cliente.
+  - **Métodos**: `receive_data(), process_commands(), handle_command(command)`
+  - **Descrição**: Dentro da função run que roda em loop se espera receber dados com receive_data(), processar os dados e depois tratar os comandos com handle_command. A partir do handle_command() são usados outro métodos de acordo com o comando.
 
-- **Adicionar Cliente ao Canal**
-  - **Método**: `add_to_channel(client, channel)`
-  - **Descrição**: Adiciona um cliente a um canal específico e notifica outros clientes do canal.
-  - **Utilização**: Chamado quando um cliente envia o comando JOIN.
 
-- **Remover Cliente do Canal**
-  - **Método**: `remove_from_channel(client, channel, motivo)`
-  - **Descrição**: Remove um cliente de um canal específico e notifica outros clientes do canal.
-  - **Utilização**: Chamado quando um cliente envia o comando PART.
-
-- **Broadcast de Mensagens**
-  - **Método**: `broadcast_to_channel(channel, message, sender=None)`
-  - **Descrição**: Envia uma mensagem para todos os clientes de um canal, exceto o remetente.
-  - **Utilização**: Usado para comandos como PRIVMSG.
 
 ### Comandos IRC Implementados
 - **NICK**: Define o apelido do usuário.

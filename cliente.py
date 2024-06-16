@@ -52,12 +52,12 @@ class Cliente:
                 if len(partes) >= 2:
                     self.join_command(partes[1])
                 else:
-                    print("Uso: /join #<canal>")
+                    print("Uso: /join <canal>")
             elif comando == "/leave":
                 if len(partes) >= 2:
                     self.part_command(partes[1], " ".join(partes[2:]))
                 else:
-                    print("Uso: /leave #<canal> <motivo>")
+                    print("Uso: /leave <canal> <motivo>")
             elif comando == "/channel":
                 if len(partes) >= 2:
                     if partes[1] in self.channels:
@@ -68,31 +68,25 @@ class Cliente:
                 else:
                     print(f"Canais: {', '.join(self.channels)}")
             elif comando == "/list":
-                self.list_command()
+                if len(partes) >= 2:
+                    self.list_command(partes[1])
+                else:
+                    print("Uso: /list <canal>")
             elif comando == "/names":
                 if len(partes) >= 2:
                     self.names_command(partes[1])
                 elif self.current_channel:
                     self.names_command(self.current_channel)
                 else:
-                    print("Uso: /names <#canal>")
+                    print("Uso: /names <canal>")
             elif comando == "/msg":
                 if len(partes) >= 3:
                     self.privmsg_command(partes[1], " ".join(partes[2:]))
                 elif self.current_channel and len(partes) >= 2:
                     self.privmsg_command(self.current_channel, " ".join(partes[1:]))
                 else:
-                    print("Uso: /msg <#canal> <mensagem> ou /msg <mensagem>")
-            elif comando == "/mode":
-                if len(partes) >= 2:
-                    self.mode_command(partes[1])
-                else:
-                    print("Uso: /mode <#canal>")
-            elif comando == "/who":
-                if len(partes) >= 2:
-                    self.who_command(partes[1])
-                else:
-                    print("Uso: /who <#canal>")
+                    print("Uso: /msg <canal> <mensagem> ou /msg <mensagem>")
+    
             elif comando == "/help":
                 self.mostrar_ajuda()
             
@@ -169,7 +163,7 @@ class Cliente:
         self.enviar_dados(f"NICK {username}")
 
     def user_command(self, username, realname):
-        self.enviar_dados(f"USER {username} 0 = :{realname}")
+        self.enviar_dados(f"USER {username} 0 = {realname}")
 
     def join_command(self, canal):
         self.enviar_dados(f"JOIN {canal}")
@@ -177,25 +171,25 @@ class Cliente:
         self.current_channel = canal
 
     def part_command(self, canal, motivo):
-        self.enviar_dados(f"PART {canal} :{motivo}")
+        self.enviar_dados(f"PART {canal} {motivo}")
         self.channels.discard(canal)
         if self.current_channel == canal:
             self.current_channel = None
 
     def quit_command(self, motivo):
-        self.enviar_dados(f"QUIT :{motivo}")
+        self.enviar_dados(f"QUIT {motivo}")
         self.conectado = False
         self.socket.close()
              
 
     def privmsg_command(self, canal, mensagem):
-        self.enviar_dados(f"PRIVMSG {canal} :{mensagem}")
+        self.enviar_dados(f"PRIVMSG {canal} {mensagem}")
 
     def names_command(self, canal):
         self.enviar_dados(f"NAMES {canal}")
 
-    def list_command(self):
-        self.enviar_dados("LIST")
+    def list_command(self, canal):
+        self.enviar_dados(f"LIST {canal}")
 
     def pong_resp(self, msg):
         self.enviar_dados(f"PONG {msg}")
@@ -211,12 +205,12 @@ Comandos disponíveis:
 /connect <host>         - Conecta ao servidor IRC
 /disconnect <motivo>    - Desconecta do servidor IRC
 /quit <motivo>          - Sai do cliente IRC
-/join <#canal>          - Entra em um canal
-/leave <#canal> <motivo> - Sai de um canal
+/join <canal>          - Entra em um canal
+/leave <canal> <motivo> - Sai de um canal
 /channel <#canal>       - Define o canal atual ou lista os canais que está participando
 /list                   - Lista os canais disponíveis
-/names <#canal>         - Lista os usuários em um canal
-/msg <#canal> <mensagem> - Envia uma mensagem para um canal
+/names <canal>         - Lista os usuários em um canal
+/msg <canal> <mensagem> - Envia uma mensagem para um canal
 /help                   - Mostra esta mensagem de ajuda
             """
         )
