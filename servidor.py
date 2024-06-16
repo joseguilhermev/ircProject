@@ -19,25 +19,24 @@ class Cliente:
         self.registered = False
         self.buffer = ""
         self.actual_channel = None
-    
+        self.staus_conn = None
+        
     # Função que roda em loop para receber e processar comandos do cliente
     def run(self):
         print(f"Cliente {self.addr} conectado.")
+        self.staus_conn = True
         try:
-            ping_thread = threading.Thread(target=self.send_ping)
-            ping_thread.start()
             
             while True:
-                data = self.receive_data()
-                if data:
-                    self.process_commands(data)
+                if self.staus_conn:
+                    data = self.receive_data()
+                    if data:
+                        self.process_commands(data)
                 else:
-                    self.handle_quit()
                     break
         except Exception as e:
             print(f"Erro ao processar dados de {self.addr}: {e}")
-        finally:
-            self.handle_quit()
+        
     
     # Auxilia a função run() a receber dados de comando do cliente 
     def receive_data(self):
@@ -140,6 +139,7 @@ class Cliente:
     def handle_quit(self, motivo=""):
         self.server.remove_client(self, motivo)
         self.conn.close()
+        self.staus_conn = False
         
     def handle_privmsg(self, channel, message):
         self.server.broadcast_to_channel(
@@ -165,19 +165,6 @@ class Cliente:
             self.send_data(f":server 322 {self.nick} {channel} {len(clients)} :\r\n")
         self.send_data(f":server 323 {self.nick} :End of /LIST\r\n")
 
-    def handle_mode(self, channel):
-        # Placeholder response for MODE command
-        self.send_data(f":server 324 {self.nick} {channel} +nt\r\n")
-
-    def handle_who(self, channel):
-        if channel in self.server.channels:
-            for client in self.server.channels[channel]:
-                self.send_data(
-                    f":server 352 {self.nick} {channel} {client.username} {client.addr[0]} server {client.nick} H :0 {client.username}\r\n"
-                )
-            self.send_data(f":server 315 {self.nick} {channel} :End of /WHO list.\r\n")
-        else:
-            self.send_data(f"403 {self.nick} {channel} :No such channel\r\n")
 
     def handle_ping(self, message):
         self.send_data(f"PONG :{message}\r\n")
